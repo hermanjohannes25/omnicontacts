@@ -33,11 +33,16 @@ module OmniContacts
       #   is simply forwarded to the next middleware component.
       def call env
         @env = env
+        logger.puts("PATH_INFO : ==== : #{@env["PATH_INFO"]}") if logger
+
         if env["PATH_INFO"] =~ /^#{@listening_path}\/?$/
+          logger.puts("PATH_INFO :> handle_initial_request") if logger
           handle_initial_request
         elsif env["PATH_INFO"] =~ /^#{redirect_path}/
+          logger.puts("PATH_INFO :> handle_callback") if logger
           handle_callback
         else
+          logger.puts("PATH_INFO :> handle_callback") if logger
           @app.call(env)
         end
       end
@@ -61,8 +66,10 @@ module OmniContacts
       def handle_callback
         execute_and_rescue_exceptions do
           @env["omnicontacts.contacts"] = if test_mode?
+            logger.puts("handle_callback :> test_mode?") if logger
             IntegrationTest.instance.mock_fetch_contacts(self)
           else
+            logger.puts("handle_callback !test_mode?") if logger
             fetch_contacts
           end
           set_current_user IntegrationTest.instance.mock_fetch_user(self) if test_mode?
@@ -96,7 +103,7 @@ module OmniContacts
       end
 
       def handle_error error_type, exception
-        logger.puts("Error #{error_type} while processing #{@env["PATH_INFO"]}: #{exception.message}") if logger
+        logger.puts("Error #{error_type} while   #{@env["PATH_INFO"]}: #{exception.message}") if logger
         failure_url = "#{ MOUNT_PATH }failure?error_message=#{error_type}&importer=#{class_name}"
         target_url = append_state_query(failure_url)
         [302, {"Content-Type" => "text/html", "location" => target_url}, []]
@@ -116,6 +123,8 @@ module OmniContacts
       end
 
       def append_state_query(target_url)
+        logger.puts("ENV : #{@env['QUERY_STRING']}") if logger
+        # binding.pry
         state = Rack::Utils.parse_query(@env['QUERY_STRING'])['state']
 
         unless state.nil?
