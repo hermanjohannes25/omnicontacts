@@ -13,11 +13,11 @@ module OmniContacts
         super app, client_id, client_secret, options
         @auth_host = "login.microsoftonline.com"
         @authorize_path = "/common/oauth2/authorize"
-        @scope = options[:permissions] || "https://outlook.office.com/contacts.read https://outlook.office.com/mail.read https://outlook.office.com/mail.send"
+        @scope = options[:permissions] || "https://graph.microsoft.com/contacts.read https://graph.microsoft.com/mail.read https://graph.microsoft.com/mail.send"
         @auth_token_path = "/common/oauth2/token"
-        @contacts_host = "outlook.office365.com"
-        @contacts_path = "/v2.0/me/contacts"
-        @self_path = "/v2.0/me"
+        @contacts_host = "graph.microsoft.com"
+        @contacts_path = "/v1.0/me/contacts"
+        @self_path = "/v1.0/me"
       end
 
       def fetch_access_token code
@@ -45,10 +45,9 @@ module OmniContacts
         fields = nil
         sort = nil
         user = nil
-        request_url = "/api/v2.0/" << (user.nil? ? "Me/" : ("users/" << user)) << "Contacts"
+        request_url = "/v1.0/" << (user.nil? ? "Me/" : ("users/" << user)) << "Contacts"
         request_params = {
-          '$top' => view_size,
-          '$skip' => (page - 1) * view_size
+          '$top' => view_size
         }
 
         if not fields.nil?
@@ -74,10 +73,9 @@ module OmniContacts
         fields = nil
         sort = nil
         user = nil
-        request_url = "/api/v2.0/" << (user.nil? ? "Me" : ("users/" << user))
+        request_url = "/v1.0/" << (user.nil? ? "Me" : ("users/" << user))
         request_params = {
-          '$top' => view_size,
-          '$skip' => (page - 1) * view_size
+          '$top' => view_size
         }
 
         if not fields.nil?
@@ -130,7 +128,7 @@ module OmniContacts
       def current_user me
         return nil if me.nil?
         me = JSON.parse(me)
-        email = me["EmailAddress"]
+        email = me["mail"]
         user = {:id => me['Id'], :emailAddress => email, :email => email, :name => me['DisplayName'], :first_name => me['first_name'],
                 :last_name => me['last_name'], :gender => me['gender'], :profile_picture => image_url(me['id']),
                 :birthday => birthday_format(me['birth_month'], me['birth_day'], me['birth_year'])
